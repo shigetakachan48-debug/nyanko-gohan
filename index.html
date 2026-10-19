@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>にゃんこごはん - 子猫の食事・おやつ管理</title>
+  <title>にゃんこごはん - 子猫の食事管理</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -105,9 +104,9 @@
 
           <div class="grid grid-cols-3 gap-2">
             <!-- おやつ 1 -->
-            <div id="snack1Box" class="bg-white rounded-xl p-2 border border-pink-100 flex flex-col justify-between text-center min-h-[90px]">
+            <div id="snack1Box" class="bg-white rounded-xl p-2 border border-pink-100 flex flex-col justify-between text-center min-h-[85px]">
               <div class="text-[11px] font-bold text-pink-900">1回目</div>
-              <div id="snack1Details" class="text-[10px] text-amber-800 my-1">
+              <div id="snack1Details" class="text-[10px] text-amber-800 my-0.5">
                 <span class="text-gray-400 italic">未入力</span>
               </div>
               <button id="snack1Btn" onclick="openMealModal('おやつ1')" class="py-1 bg-pink-400 hover:bg-pink-500 text-white font-bold rounded-lg text-[10px] transition active:scale-95">
@@ -116,9 +115,9 @@
             </div>
 
             <!-- おやつ 2 -->
-            <div id="snack2Box" class="bg-white rounded-xl p-2 border border-pink-100 flex flex-col justify-between text-center min-h-[90px]">
+            <div id="snack2Box" class="bg-white rounded-xl p-2 border border-pink-100 flex flex-col justify-between text-center min-h-[85px]">
               <div class="text-[11px] font-bold text-pink-900">2回目</div>
-              <div id="snack2Details" class="text-[10px] text-amber-800 my-1">
+              <div id="snack2Details" class="text-[10px] text-amber-800 my-0.5">
                 <span class="text-gray-400 italic">未入力</span>
               </div>
               <button id="snack2Btn" onclick="openMealModal('おやつ2')" class="py-1 bg-pink-400 hover:bg-pink-500 text-white font-bold rounded-lg text-[10px] transition active:scale-95">
@@ -127,9 +126,9 @@
             </div>
 
             <!-- おやつ 3 -->
-            <div id="snack3Box" class="bg-white rounded-xl p-2 border border-pink-100 flex flex-col justify-between text-center min-h-[90px]">
+            <div id="snack3Box" class="bg-white rounded-xl p-2 border border-pink-100 flex flex-col justify-between text-center min-h-[85px]">
               <div class="text-[11px] font-bold text-pink-900">3回目</div>
-              <div id="snack3Details" class="text-[10px] text-amber-800 my-1">
+              <div id="snack3Details" class="text-[10px] text-amber-800 my-0.5">
                 <span class="text-gray-400 italic">未入力</span>
               </div>
               <button id="snack3Btn" onclick="openMealModal('おやつ3')" class="py-1 bg-pink-400 hover:bg-pink-500 text-white font-bold rounded-lg text-[10px] transition active:scale-95">
@@ -213,6 +212,13 @@
   </div>
 
   <script>
+    function getFormattedDate(d) {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
     const firebaseConfig = {
       apiKey: "AIzaSyAKo-n_aOMzg78veB7PdRSzUgNbuoqRzIo",
       authDomain: "nyanko-tracker.firebaseapp.com",
@@ -238,13 +244,6 @@
       renderCalendar();
       setupFirestoreListener();
     });
-
-    function getFormattedDate(d) {
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd}`;
-    }
 
     function updateDateDisplay() {
       const yyyy = selectedDate.getFullYear();
@@ -321,17 +320,16 @@
           snackCount++;
           details.innerHTML = `
             <div class="font-bold text-pink-900">${data.person}</div>
-            <div class="text-[9px] text-gray-500">${data.time}</div>
-            ${data.note ? `<div class="text-[9px] italic text-amber-700 truncate">${data.note}</div>` : ''}
+            <div class="text-[9px] text-gray-500">${data.time}</div>${data.note ? `<div class="text-[9px] italic text-amber-700 truncate">${data.note}</div>` : ''}
           `;
           btn.innerText = "変更";
           btn.className = "py-1 bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold rounded-lg text-[10px] transition";
-          box.className = "bg-pink-100/50 rounded-xl p-2 border border-pink-300 flex flex-col justify-between text-center min-h-[90px]";
+          box.className = "bg-pink-100/50 rounded-xl p-2 border border-pink-300 flex flex-col justify-between text-center min-h-[85px]";
         } else {
           details.innerHTML = `<span class="text-gray-400 italic">未入力</span>`;
           btn.innerText = "あげた！";
           btn.className = "py-1 bg-pink-400 hover:bg-pink-500 text-white font-bold rounded-lg text-[10px] transition active:scale-95";
-          box.className = "bg-white rounded-xl p-2 border border-pink-100 flex flex-col justify-between text-center min-h-[90px]";
+          box.className = "bg-white rounded-xl p-2 border border-pink-100 flex flex-col justify-between text-center min-h-[85px]";
         }
       });
 
@@ -348,8 +346,7 @@
         badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300";
         badge.innerText = "完了";
         details.innerHTML = `
-          <p class="font-bold text-amber-900"><i class="fa-solid fa-user mr-1 text-amber-600"></i>${data.person} <span class="text-amber-700/70 text-[11px] font-normal">(${data.time})</span></p>
-          ${data.note ? `<p class="italic text-amber-600 bg-amber-100/50 p-1 rounded mt-0.5 text-[11px]">${data.note}</p>` : ''}
+          <p class="font-bold text-amber-900"><i class="fa-solid fa-user mr-1 text-amber-600"></i>${data.person} <span class="text-amber-700/70 text-[11px] font-normal">(${data.time})</span></p>${data.note ? `<p class="italic text-amber-600 bg-amber-100/50 p-1 rounded mt-0.5 text-[11px]">${data.note}</p>` : ''}
         `;
         btn.innerText = "変更・削除";
         btn.className = "mt-2 w-full py-1.5 bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold rounded-xl text-xs transition";
@@ -439,4 +436,67 @@
       if (activeMealType === '夕') keyType = 'evening';
       if (activeMealType === 'おやつ1') keyType = 'snack1';
       if (activeMealType === 'おやつ2') keyType = 'snack2';
-      if
+      if (activeMealType === 'おやつ3') keyType = 'snack3';
+
+      const payload = {
+        [keyType]: {
+          person: selectedFamilyMember,
+          time: timeVal,
+          note: noteVal,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      db.collection('meals').doc(selectedKey).set(payload, { merge: true })
+        .then(() => {
+          closeMealModal();
+        })
+        .catch(err => alert("エラー: " + err.message));
+    }
+
+    function deleteMealRecord() {
+      const selectedKey = getFormattedDate(selectedDate);
+      let keyType = 'morning';
+      if (activeMealType === '夕') keyType = 'evening';
+      if (activeMealType === 'おやつ1') keyType = 'snack1';
+      if (activeMealType === 'おやつ2') keyType = 'snack2';
+      if (activeMealType === 'おやつ3') keyType = 'snack3';
+
+      db.collection('meals').doc(selectedKey).update({
+        [keyType]: firebase.firestore.FieldValue.delete()
+      }).then(() => closeMealModal());
+    }
+
+    function renderCalendar() {
+      const year = currentViewDate.getFullYear();
+      const month = currentViewDate.getMonth();
+      document.getElementById('calendarMonthText').innerText = `${year}年 ${month + 1}月`;
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const grid = document.getElementById('calendarGrid');
+      grid.innerHTML = '';
+
+      for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement('div');
+        empty.className = "h-14 bg-gray-50/50 rounded-xl";
+        grid.appendChild(empty);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const d = new Date(year, month, day);
+        const dateKey = getFormattedDate(d);
+        const dayData = mealsData[dateKey] || {};
+        const cell = document.createElement('div');
+
+        const isToday = dateKey === getFormattedDate(todayDate);
+        const isSelected = dateKey === getFormattedDate(selectedDate);
+
+        let borderStyle = 'border-amber-100 bg-white';
+        if (isSelected) {
+          borderStyle = 'border-amber-500 bg-amber-100/60 ring-2 ring-amber-400 font-bold';
+        } else if (isToday) {
+          borderStyle = 'border-orange-300 bg-orange-50 font-bold';
+        }
+
+        cell.className = `h-14 border rounded-xl p-1 flex flex-

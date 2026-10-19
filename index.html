@@ -6,6 +6,7 @@
   <title>にゃんこごはん - 子猫の食事・おやつ管理</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -220,6 +221,20 @@
       return `${yyyy}-${mm}-${dd}`;
     }
 
+    function triggerConfetti() {
+      if (typeof confetti === 'function') {
+        try {
+          confetti({
+            particleCount: 40,
+            spread: 60,
+            origin: { y: 0.7 }
+          });
+        } catch (e) {
+          console.log('confetti error', e);
+        }
+      }
+    }
+
     const firebaseConfig = {
       apiKey: "AIzaSyAKo-n_aOMzg78veB7PdRSzUgNbuoqRzIo",
       authDomain: "nyanko-tracker.firebaseapp.com",
@@ -430,153 +445,4 @@
     }
 
     function closeMealModal() {
-      document.getElementById('mealModal').classList.add('hidden');
-    }
-
-    function saveMealRecord() {
-      if (!selectedFamilyMember) return;
-      const selectedKey = getFormattedDate(selectedDate);
-      const timeVal = document.getElementById('mealTimeInput').value;
-      const noteVal = document.getElementById('mealNoteInput').value;
-      
-      let keyType = 'morning';
-      if (activeMealType === '夕') keyType = 'evening';
-      if (activeMealType === 'おやつ1') keyType = 'snack1';
-      if (activeMealType === 'おやつ2') keyType = 'snack2';
-      if (activeMealType === 'おやつ3') keyType = 'snack3';
-
-      const payload = {
-        [keyType]: {
-          person: selectedFamilyMember,
-          time: timeVal,
-          note: noteVal,
-          timestamp: new Date().toISOString()
-        }
-      };
-
-      db.collection('meals').doc(selectedKey).set(payload, { merge: true })
-        .then(() => {
-          closeMealModal();
-        })
-        .catch(err => alert("エラー: " + err.message));
-    }
-
-    function deleteMealRecord() {
-      const selectedKey = getFormattedDate(selectedDate);
-      let keyType = 'morning';
-      if (activeMealType === '夕') keyType = 'evening';
-      if (activeMealType === 'おやつ1') keyType = 'snack1';
-      if (activeMealType === 'おやつ2') keyType = 'snack2';
-      if (activeMealType === 'おやつ3') keyType = 'snack3';
-
-      db.collection('meals').doc(selectedKey).update({
-        [keyType]: firebase.firestore.FieldValue.delete()
-      }).then(() => closeMealModal()).catch(err => closeMealModal());
-    }
-
-    function renderCalendar() {
-      const year = currentViewDate.getFullYear();
-      const month = currentViewDate.getMonth();
-      document.getElementById('calendarMonthText').innerText = `${year}年 ${month + 1}月`;
-
-      const firstDay = new Date(year, month, 1).getDay();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const grid = document.getElementById('calendarGrid');
-      grid.innerHTML = '';
-
-      for (let i = 0; i < firstDay; i++) {
-        const empty = document.createElement('div');
-        empty.className = "h-14 bg-gray-50/50 rounded-xl";
-        grid.appendChild(empty);
-      }
-
-      for (let day = 1; day <= daysInMonth; day++) {
-        const d = new Date(year, month, day);
-        const dateKey = getFormattedDate(d);
-        const dayData = mealsData[dateKey] || {};
-        const cell = document.createElement('div');
-
-        const isToday = dateKey === getFormattedDate(todayDate);
-        const isSelected = dateKey === getFormattedDate(selectedDate);
-
-        let borderStyle = 'border-amber-100 bg-white';
-        if (isSelected) {
-          borderStyle = 'border-amber-500 bg-amber-100/60 ring-2 ring-amber-400 font-bold';
-        } else if (isToday) {
-          borderStyle = 'border-orange-300 bg-orange-50 font-bold';
-        }
-
-        cell.className = `h-14 border rounded-xl p-1 flex flex-col justify-between transition cursor-pointer hover:bg-amber-50/80 ${borderStyle}`;
-        cell.onclick = () => selectDate(dateKey);
-
-        let iconsHtml = '';
-        if (dayData.morning && dayData.morning.person) {
-          iconsHtml += `<span class="text-[8px] text-amber-600 truncate"><i class="fa-solid fa-sun"></i> ${dayData.morning.person.substring(0, 2)}</span>`;
-        }
-        if (dayData.evening && dayData.evening.person) {
-          iconsHtml += `<span class="text-[8px] text-indigo-500 truncate"><i class="fa-solid fa-moon"></i> ${dayData.evening.person.substring(0, 2)}</span>`;
-        }
-        
-        let snackCount = 0;
-        if (dayData.snack1 && dayData.snack1.person) snackCount++;
-        if (dayData.snack2 && dayData.snack2.person) snackCount++;
-        if (dayData.snack3 && dayData.snack3.person) snackCount++;
-        if (snackCount > 0) {
-          iconsHtml += `<span class="text-[8px] text-pink-500 truncate"><i class="fa-solid fa-cookie-bite"></i> おやつ×${snackCount}</span>`;
-        }
-
-        cell.innerHTML = `
-          <div class="text-[10px] ${d.getDay() === 0 ? 'text-red-400' : d.getDay() === 6 ? 'text-blue-400' : 'text-amber-900'}">${day}</div>
-          <div class="flex flex-col gap-0.5 leading-none overflow-hidden">${iconsHtml}</div>
-        `;
-        grid.appendChild(cell);
-      }
-    }
-
-    function changeMonth(delta) {
-      currentViewDate.setMonth(currentViewDate.getMonth() + delta);
-      renderCalendar();
-    }
-
-    function openFamilyModal() {
-      renderFamilyList();
-      document.getElementById('familyModal').classList.remove('hidden');
-    }
-
-    function closeFamilyModal() {
-      document.getElementById('familyModal').classList.add('hidden');
-    }
-
-    function renderFamilyList() {
-      const list = document.getElementById('familyList');
-      list.innerHTML = '';
-      familyMembers.forEach((member, index) => {
-        const item = document.createElement('div');
-        item.className = "flex justify-between items-center bg-amber-50 p-2 rounded-xl border border-amber-100 text-xs";
-        item.innerHTML = `
-          <span class="font-bold text-amber-900">${member}</span>
-          <button onclick="removeFamilyMember(${index})" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
-        `;
-        list.appendChild(item);
-      });
-    }
-
-    function addFamilyMember() {
-      const input = document.getElementById('newMemberInput');
-      const val = input.value.trim();
-      if (!val) return;
-      familyMembers.push(val);
-      input.value = '';
-      db.collection('settings').doc('family').set({ members: familyMembers });
-      renderFamilyList();
-    }
-
-    function removeFamilyMember(index) {
-      if (familyMembers.length <= 1) return;
-      familyMembers.splice(index, 1);
-      db.collection('settings').doc('family').set({ members: familyMembers });
-      renderFamilyList();
-    }
-  </script>
-</body>
-</html>
+      document.getElementById

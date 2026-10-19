@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>にゃんこごはん - 子猫の食事管理</title>
+  <title>にゃんこごはん - 子猫の食事・おやつ管理</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
@@ -221,6 +221,20 @@
       return `${yyyy}-${mm}-${dd}`;
     }
 
+    function triggerConfetti() {
+      if (typeof confetti === 'function') {
+        try {
+          confetti({
+            particleCount: 40,
+            spread: 60,
+            origin: { y: 0.7 }
+          });
+        } catch (e) {
+          console.log('confetti error', e);
+        }
+      }
+    }
+
     const firebaseConfig = {
       apiKey: "AIzaSyAKo-n_aOMzg78veB7PdRSzUgNbuoqRzIo",
       authDomain: "nyanko-tracker.firebaseapp.com",
@@ -292,7 +306,6 @@
           } else {
             db.collection('settings').doc('family').set({ members: familyMembers });
           }
-          renderCalendar();
         }, err => console.log('family sync err', err));
 
         db.collection('meals').onSnapshot(snapshot => {
@@ -305,7 +318,6 @@
         }, err => console.log('meals sync err', err));
       } catch (e) {
         console.log('setup error', e);
-        renderCalendar();
       }
     }
 
@@ -328,7 +340,8 @@
           snackCount++;
           details.innerHTML = `
             <div class="font-bold text-pink-900">${data.person}</div>
-            <div class="text-[9px] text-gray-500">${data.time \vert{}\vert{} ''}</div>${data.note ? `<div class="text-[9px] italic text-amber-700 truncate">${data.note}</div>` : ''}
+            <div class="text-[9px] text-gray-500">${data.time || ''}</div>
+            ${data.note ? `<div class="text-[9px] italic text-amber-700 truncate">${data.note}</div>` : ''}
           `;
           btn.innerText = "変更";
           btn.className = "py-1 bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold rounded-lg text-[10px] transition";
@@ -354,4 +367,232 @@
         badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300";
         badge.innerText = "完了";
         details.innerHTML = `
-          <p class="font-bold text-amber-900"><i class="fa-solid fa-user mr-1 text-amber-600">
+          <p class="font-bold text-amber-900"><i class="fa-solid fa-user mr-1 text-amber-600"></i>${data.person} <span class="text-amber-700/70 text-[11px] font-normal">(${data.time || ''})</span></p>
+          ${data.note ? `<p class="italic text-amber-600 bg-amber-100/50 p-1 rounded mt-0.5 text-[11px]">${data.note}</p>` : ''}
+        `;
+        btn.innerText = "変更・削除";
+        btn.className = "mt-2 w-full py-1.5 bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold rounded-xl text-xs transition";
+        card.className = "border-2 border-emerald-300 bg-emerald-50/20 rounded-2xl p-3 flex flex-col justify-between min-h-[130px] transition-all";
+      } else {
+        badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500";
+        badge.innerText = "未入力";
+        details.innerHTML = `<p class="italic text-gray-400 text-[11px]">まだあげていません</p>`;
+        
+        if (type === 'morning') {
+          btn.className = "mt-2 w-full py-1.5 bg-amber-400 hover:bg-amber-500 text-white font-bold rounded-xl text-xs shadow-sm transition active:scale-95";
+        } else {
+          btn.className = "mt-2 w-full py-1.5 bg-indigo-400 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-sm transition active:scale-95";
+        }
+        
+        btn.innerText = "あげた！";
+        card.className = "border-2 border-amber-100 bg-amber-50/30 rounded-2xl p-3 flex flex-col justify-between min-h-[130px] transition-all";
+      }
+    }
+
+    function openMealModal(type) {
+      activeMealType = type;
+      let icon = 'fa-sun text-amber-500';
+      if (type === '夕') icon = 'fa-moon text-indigo-400';
+      if (type.includes('おやつ')) icon = 'fa-cookie-bite text-pink-500';
+
+      document.getElementById('modalTitle').innerHTML = `<i class="fa-solid ${icon} mr-1"></i> ${type}の記録`;
+
+      const selector = document.getElementById('familySelector');
+      selector.innerHTML = '';
+      selectedFamilyMember = familyMembers[0] || '';
+
+      familyMembers.forEach((m, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `py-1.5 px-2 rounded-xl text-xs font-bold border transition ${idx === 0 ? 'bg-amber-400 text-white border-amber-400' : 'bg-amber-50/50 text-amber-800 border-amber-200 hover:bg-amber-100'}`;
+        btn.innerText = m;
+        btn.onclick = () => {
+          Array.from(selector.children).forEach(c => c.className = 'py-1.5 px-2 rounded-xl text-xs font-bold border transition bg-amber-50/50 text-amber-800 border-amber-200 hover:bg-amber-100');
+          btn.className = 'py-1.5 px-2 rounded-xl text-xs font-bold border transition bg-amber-400 text-white border-amber-400';
+          selectedFamilyMember = m;
+        };
+        selector.appendChild(btn);
+      });
+
+      const now = new Date();
+      document.getElementById('mealTimeInput').value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      const selectedKey = getFormattedDate(selectedDate);
+      let keyType = 'morning';
+      if (type === '夕') keyType = 'evening';
+      if (type === 'おやつ1') keyType = 'snack1';
+      if (type === 'おやつ2') keyType = 'snack2';
+      if (type === 'おやつ3') keyType = 'snack3';
+
+      const existing = mealsData[selectedKey] ? mealsData[selectedKey][keyType] : null;
+
+      if (existing) {
+        document.getElementById('mealTimeInput').value = existing.time || '';
+        document.getElementById('mealNoteInput').value = existing.note || '';
+        document.getElementById('deleteMealBtn').classList.remove('hidden');
+        selectedFamilyMember = existing.person;
+        Array.from(selector.children).forEach(btn => {
+          if (btn.innerText === existing.person) {
+            btn.className = 'py-1.5 px-2 rounded-xl text-xs font-bold border transition bg-amber-400 text-white border-amber-400';
+          }
+        });
+      } else {
+        document.getElementById('mealNoteInput').value = '';
+        document.getElementById('deleteMealBtn').classList.add('hidden');
+      }
+
+      document.getElementById('mealModal').classList.remove('hidden');
+    }
+
+    function closeMealModal() {
+      document.getElementById('mealModal').classList.add('hidden');
+    }
+
+    function saveMealRecord() {
+      if (!selectedFamilyMember) return;
+      const selectedKey = getFormattedDate(selectedDate);
+      const timeVal = document.getElementById('mealTimeInput').value;
+      const noteVal = document.getElementById('mealNoteInput').value;
+      
+      let keyType = 'morning';
+      if (activeMealType === '夕') keyType = 'evening';
+      if (activeMealType === 'おやつ1') keyType = 'snack1';
+      if (activeMealType === 'おやつ2') keyType = 'snack2';
+      if (activeMealType === 'おやつ3') keyType = 'snack3';
+
+      const payload = {
+        [keyType]: {
+          person: selectedFamilyMember,
+          time: timeVal,
+          note: noteVal,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      db.collection('meals').doc(selectedKey).set(payload, { merge: true })
+        .then(() => {
+          triggerConfetti();
+          closeMealModal();
+        })
+        .catch(err => alert("エラー: " + err.message));
+    }
+
+    function deleteMealRecord() {
+      const selectedKey = getFormattedDate(selectedDate);
+      let keyType = 'morning';
+      if (activeMealType === '夕') keyType = 'evening';
+      if (activeMealType === 'おやつ1') keyType = 'snack1';
+      if (activeMealType === 'おやつ2') keyType = 'snack2';
+      if (activeMealType === 'おやつ3') keyType = 'snack3';
+
+      db.collection('meals').doc(selectedKey).update({
+        [keyType]: firebase.firestore.FieldValue.delete()
+      }).then(() => closeMealModal()).catch(err => closeMealModal());
+    }
+
+    function renderCalendar() {
+      const year = currentViewDate.getFullYear();
+      const month = currentViewDate.getMonth();
+      document.getElementById('calendarMonthText').innerText = `${year}年 ${month + 1}月`;
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const grid = document.getElementById('calendarGrid');
+      grid.innerHTML = '';
+
+      for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement('div');
+        empty.className = "h-14 bg-gray-50/50 rounded-xl";
+        grid.appendChild(empty);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const d = new Date(year, month, day);
+        const dateKey = getFormattedDate(d);
+        const dayData = mealsData[dateKey] || {};
+        const cell = document.createElement('div');
+
+        const isToday = dateKey === getFormattedDate(todayDate);
+        const isSelected = dateKey === getFormattedDate(selectedDate);
+
+        let borderStyle = 'border-amber-100 bg-white';
+        if (isSelected) {
+          borderStyle = 'border-amber-500 bg-amber-100/60 ring-2 ring-amber-400 font-bold';
+        } else if (isToday) {
+          borderStyle = 'border-orange-300 bg-orange-50 font-bold';
+        }
+
+        cell.className = `h-14 border rounded-xl p-1 flex flex-col justify-between transition cursor-pointer hover:bg-amber-50/80 ${borderStyle}`;
+        cell.onclick = () => selectDate(dateKey);
+
+        let iconsHtml = '';
+        if (dayData.morning && dayData.morning.person) {
+          iconsHtml += `<span class="text-[8px] text-amber-600 truncate"><i class="fa-solid fa-sun"></i> ${dayData.morning.person.substring(0, 2)}</span>`;
+        }
+        if (dayData.evening && dayData.evening.person) {
+          iconsHtml += `<span class="text-[8px] text-indigo-500 truncate"><i class="fa-solid fa-moon"></i> ${dayData.evening.person.substring(0, 2)}</span>`;
+        }
+        
+        let snackCount = 0;
+        if (dayData.snack1 && dayData.snack1.person) snackCount++;
+        if (dayData.snack2 && dayData.snack2.person) snackCount++;
+        if (dayData.snack3 && dayData.snack3.person) snackCount++;
+        if (snackCount > 0) {
+          iconsHtml += `<span class="text-[8px] text-pink-500 truncate"><i class="fa-solid fa-cookie-bite"></i> おやつ×${snackCount}</span>`;
+        }
+
+        cell.innerHTML = `
+          <div class="text-[10px] ${d.getDay() === 0 ? 'text-red-400' : d.getDay() === 6 ? 'text-blue-400' : 'text-amber-900'}">${day}</div>
+          <div class="flex flex-col gap-0.5 leading-none overflow-hidden">${iconsHtml}</div>
+        `;
+        grid.appendChild(cell);
+      }
+    }
+
+    function changeMonth(delta) {
+      currentViewDate.setMonth(currentViewDate.getMonth() + delta);
+      renderCalendar();
+    }
+
+    function openFamilyModal() {
+      renderFamilyList();
+      document.getElementById('familyModal').classList.remove('hidden');
+    }
+
+    function closeFamilyModal() {
+      document.getElementById('familyModal').classList.add('hidden');
+    }
+
+    function renderFamilyList() {
+      const list = document.getElementById('familyList');
+      list.innerHTML = '';
+      familyMembers.forEach((member, index) => {
+        const item = document.createElement('div');
+        item.className = "flex justify-between items-center bg-amber-50 p-2 rounded-xl border border-amber-100 text-xs";
+        item.innerHTML = `
+          <span class="font-bold text-amber-900">${member}</span>
+          <button onclick="removeFamilyMember(${index})" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function addFamilyMember() {
+      const input = document.getElementById('newMemberInput');
+      const val = input.value.trim();
+      if (!val) return;
+      familyMembers.push(val);
+      input.value = '';
+      db.collection('settings').doc('family').set({ members: familyMembers });
+      renderFamilyList();
+    }
+
+    function removeFamilyMember(index) {
+      if (familyMembers.length <= 1) return;
+      familyMembers.splice(index, 1);
+      db.collection('settings').doc('family').set({ members: familyMembers });
+      renderFamilyList();
+    }
+  </script>
+</body>
+</html>

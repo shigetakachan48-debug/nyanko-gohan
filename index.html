@@ -239,6 +239,13 @@
       setupFirestoreListener();
     });
 
+    function getFormattedDate(d) {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
     function updateDateDisplay() {
       const yyyy = selectedDate.getFullYear();
       const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
@@ -302,6 +309,134 @@
       updateMealCard('morning', dayMeals.morning);
       updateMealCard('evening', dayMeals.evening);
 
-      // おやつ (1, 2, 3)
       let snackCount = 0;
-      ['snack1', 'snack2', 'snack3'].forEach((snackKey, idx) =>
+      ['snack1', 'snack2', 'snack3'].forEach((snackKey, idx) => {
+        const num = idx + 1;
+        const data = dayMeals[snackKey];
+        const details = document.getElementById(`snack${num}Details`);
+        const btn = document.getElementById(`snack${num}Btn`);
+        const box = document.getElementById(`snack${num}Box`);
+
+        if (data) {
+          snackCount++;
+          details.innerHTML = `
+            <div class="font-bold text-pink-900">${data.person}</div>
+            <div class="text-[9px] text-gray-500">${data.time}</div>
+            ${data.note ? `<div class="text-[9px] italic text-amber-700 truncate">${data.note}</div>` : ''}
+          `;
+          btn.innerText = "変更";
+          btn.className = "py-1 bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold rounded-lg text-[10px] transition";
+          box.className = "bg-pink-100/50 rounded-xl p-2 border border-pink-300 flex flex-col justify-between text-center min-h-[90px]";
+        } else {
+          details.innerHTML = `<span class="text-gray-400 italic">未入力</span>`;
+          btn.innerText = "あげた！";
+          btn.className = "py-1 bg-pink-400 hover:bg-pink-500 text-white font-bold rounded-lg text-[10px] transition active:scale-95";
+          box.className = "bg-white rounded-xl p-2 border border-pink-100 flex flex-col justify-between text-center min-h-[90px]";
+        }
+      });
+
+      document.getElementById('snackTotalCount').innerText = `${snackCount} / 3回`;
+    }
+
+    function updateMealCard(type, data) {
+      const badge = document.getElementById(`${type}Badge`);
+      const details = document.getElementById(`${type}Details`);
+      const btn = document.getElementById(`${type}Btn`);
+      const card = document.getElementById(`${type}Card`);
+
+      if (data) {
+        badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300";
+        badge.innerText = "完了";
+        details.innerHTML = `
+          <p class="font-bold text-amber-900"><i class="fa-solid fa-user mr-1 text-amber-600"></i>${data.person} <span class="text-amber-700/70 text-[11px] font-normal">(${data.time})</span></p>
+          ${data.note ? `<p class="italic text-amber-600 bg-amber-100/50 p-1 rounded mt-0.5 text-[11px]">${data.note}</p>` : ''}
+        `;
+        btn.innerText = "変更・削除";
+        btn.className = "mt-2 w-full py-1.5 bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold rounded-xl text-xs transition";
+        card.className = "border-2 border-emerald-300 bg-emerald-50/20 rounded-2xl p-3 flex flex-col justify-between min-h-[130px] transition-all";
+      } else {
+        badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500";
+        badge.innerText = "未入力";
+        details.innerHTML = `<p class="italic text-gray-400 text-[11px]">まだあげていません</p>`;
+        
+        if (type === 'morning') {
+          btn.className = "mt-2 w-full py-1.5 bg-amber-400 hover:bg-amber-500 text-white font-bold rounded-xl text-xs shadow-sm transition active:scale-95";
+        } else {
+          btn.className = "mt-2 w-full py-1.5 bg-indigo-400 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-sm transition active:scale-95";
+        }
+        
+        btn.innerText = "あげた！";
+        card.className = "border-2 border-amber-100 bg-amber-50/30 rounded-2xl p-3 flex flex-col justify-between min-h-[130px] transition-all";
+      }
+    }
+
+    function openMealModal(type) {
+      activeMealType = type;
+      let icon = 'fa-sun text-amber-500';
+      if (type === '夕') icon = 'fa-moon text-indigo-400';
+      if (type.includes('おやつ')) icon = 'fa-cookie-bite text-pink-500';
+
+      document.getElementById('modalTitle').innerHTML = `<i class="fa-solid ${icon} mr-1"></i> ${type}の記録`;
+
+      const selector = document.getElementById('familySelector');
+      selector.innerHTML = '';
+      selectedFamilyMember = familyMembers[0] || '';
+
+      familyMembers.forEach((m, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `py-1.5 px-2 rounded-xl text-xs font-bold border transition ${idx === 0 ? 'bg-amber-400 text-white border-amber-400' : 'bg-amber-50/50 text-amber-800 border-amber-200 hover:bg-amber-100'}`;
+        btn.innerText = m;
+        btn.onclick = () => {
+          Array.from(selector.children).forEach(c => c.className = 'py-1.5 px-2 rounded-xl text-xs font-bold border transition bg-amber-50/50 text-amber-800 border-amber-200 hover:bg-amber-100');
+          btn.className = 'py-1.5 px-2 rounded-xl text-xs font-bold border transition bg-amber-400 text-white border-amber-400';
+          selectedFamilyMember = m;
+        };
+        selector.appendChild(btn);
+      });
+
+      const now = new Date();
+      document.getElementById('mealTimeInput').value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      const selectedKey = getFormattedDate(selectedDate);
+      let keyType = 'morning';
+      if (type === '夕') keyType = 'evening';
+      if (type === 'おやつ1') keyType = 'snack1';
+      if (type === 'おやつ2') keyType = 'snack2';
+      if (type === 'おやつ3') keyType = 'snack3';
+
+      const existing = mealsData[selectedKey] ? mealsData[selectedKey][keyType] : null;
+
+      if (existing) {
+        document.getElementById('mealTimeInput').value = existing.time;
+        document.getElementById('mealNoteInput').value = existing.note || '';
+        document.getElementById('deleteMealBtn').classList.remove('hidden');
+        selectedFamilyMember = existing.person;
+        Array.from(selector.children).forEach(btn => {
+          if (btn.innerText === existing.person) {
+            btn.className = 'py-1.5 px-2 rounded-xl text-xs font-bold border transition bg-amber-400 text-white border-amber-400';
+          }
+        });
+      } else {
+        document.getElementById('mealNoteInput').value = '';
+        document.getElementById('deleteMealBtn').classList.add('hidden');
+      }
+
+      document.getElementById('mealModal').classList.remove('hidden');
+    }
+
+    function closeMealModal() {
+      document.getElementById('mealModal').classList.add('hidden');
+    }
+
+    function saveMealRecord() {
+      if (!selectedFamilyMember) return;
+      const selectedKey = getFormattedDate(selectedDate);
+      const timeVal = document.getElementById('mealTimeInput').value;
+      const noteVal = document.getElementById('mealNoteInput').value;
+      
+      let keyType = 'morning';
+      if (activeMealType === '夕') keyType = 'evening';
+      if (activeMealType === 'おやつ1') keyType = 'snack1';
+      if (activeMealType === 'おやつ2') keyType = 'snack2';
+      if
